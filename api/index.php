@@ -81,6 +81,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="refresh" content="60">
     <title>Sistem Absensi Fingerprint</title>
+    <link rel="icon" type="image/png" href="Gambar1.png">
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
