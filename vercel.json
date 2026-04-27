@@ -8,6 +8,5 @@
   "routes": [
     { "src": "/", "dest": "/api/index.php" },
     { "src": "/(.*)", "dest": "/api/$1" }
-  ],
-  "nodeVersion": "18.x"
+  ]
 }
