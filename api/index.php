@@ -1149,12 +1149,6 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
                 </div>
                 <button type="submit" name="login" class="btn-submit">Login Sekarang →</button>
             </form>
-            <div class="divider">ATAU</div>
-            <button class="btn-google" onclick="showToast('🚧 Fitur Google OAuth sedang dikembangkan')">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
-                Lanjutkan dengan Google
-            </button>
-        </div>
     </div>
 
     <footer class="footer">
