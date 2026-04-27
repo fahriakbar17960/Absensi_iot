@@ -550,12 +550,6 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
         .btn-submit { width: 100%; padding: 12px; border: none; background: var(--primary); color: white; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; margin-top: 8px; transition: all 0.2s; font-family: inherit; }
         .btn-submit:hover { background: var(--primary-hover); transform: translateY(-1px); }
         .alert { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px; text-align: left; display: flex; align-items: center; gap: 8px; }
-        .divider { display: flex; align-items: center; color: var(--text-light); font-size: 11px; margin: 18px 0; }
-        .divider::before,.divider::after { content:''; flex:1; border-bottom:1px solid #e2e8f0; }
-        .divider::before { margin-right:10px; } .divider::after { margin-left:10px; }
-        .btn-google { width:100%; padding:10px; background:#fff; border:1.5px solid #e2e8f0; color:var(--text-dark); border-radius:10px; font-weight:500; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; transition:all 0.2s; font-family:inherit; }
-        .btn-google:hover { background:#f8fafc; border-color:#cbd5e1; }
-        .btn-google img { width:17px; height:17px; }
 
         /* TOAST */
         .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px); background: rgba(15,23,42,0.95); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 3000; opacity: 0; pointer-events: none; transition: all 0.3s; white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
@@ -1149,6 +1143,7 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
                 </div>
                 <button type="submit" name="login" class="btn-submit">Login Sekarang →</button>
             </form>
+        </div>
     </div>
 
     <footer class="footer">
