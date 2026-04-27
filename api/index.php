@@ -68,11 +68,80 @@ $jml_sakit   = $stat['sakit'] ?? 0;
 $jml_izin    = $stat['izin'] ?? 0;
 $jml_alfa    = $stat['alfa'] ?? 0;
 
-// Hitung total siswa untuk persentase
 $total_siswa_q = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users");
 $total_siswa_row = mysqli_fetch_array($total_siswa_q);
 $total_siswa = $total_siswa_row['total'] ?? 0;
 $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
+
+// ===== STUDENT SEARCH =====
+$bulan_ini        = date("Y-m");
+$search_result    = null;
+$search_error     = "";
+$search_query_val = "";
+
+if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
+    $keyword      = trim($_GET['keyword_siswa']);
+    $search_query_val = $keyword;
+    $keyword_safe = mysqli_real_escape_string($koneksi, $keyword);
+
+    $q_user = mysqli_query($koneksi, "
+        SELECT * FROM users 
+        WHERE nama LIKE '%$keyword_safe%' 
+           OR nis LIKE '%$keyword_safe%'
+           OR finger_id LIKE '%$keyword_safe%'
+        LIMIT 1
+    ");
+
+    if ($q_user && mysqli_num_rows($q_user) > 0) {
+        $siswa = mysqli_fetch_assoc($q_user);
+        $fid   = $siswa['finger_id'];
+
+        $q_stat_bulan = mysqli_query($koneksi, "
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN keterangan='Tepat Waktu' THEN 1 ELSE 0 END) as tepat,
+                SUM(CASE WHEN keterangan='Terlambat'  THEN 1 ELSE 0 END) as terlambat,
+                SUM(CASE WHEN keterangan='Sakit'      THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN keterangan='Izin'       THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN keterangan='Alfa'       THEN 1 ELSE 0 END) as alfa
+            FROM absensi
+            WHERE id_finger = '$fid'
+              AND DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini'
+        ");
+        $stat_bulan = mysqli_fetch_assoc($q_stat_bulan);
+
+        $q_stat_all = mysqli_query($koneksi, "
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN keterangan='Tepat Waktu' THEN 1 ELSE 0 END) as tepat,
+                SUM(CASE WHEN keterangan='Terlambat'  THEN 1 ELSE 0 END) as terlambat,
+                SUM(CASE WHEN keterangan='Sakit'      THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN keterangan='Izin'       THEN 1 ELSE 0 END) as izin,
+                SUM(CASE WHEN keterangan='Alfa'       THEN 1 ELSE 0 END) as alfa
+            FROM absensi
+            WHERE id_finger = '$fid'
+        ");
+        $stat_all = mysqli_fetch_assoc($q_stat_all);
+
+        $q_riwayat = mysqli_query($koneksi, "
+            SELECT tanggal, waktu, keterangan FROM absensi
+            WHERE id_finger = '$fid'
+              AND DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini'
+            ORDER BY tanggal DESC, waktu DESC
+            LIMIT 6
+        ");
+
+        $search_result = [
+            'siswa'      => $siswa,
+            'stat_bulan' => $stat_bulan,
+            'stat_all'   => $stat_all,
+            'riwayat'    => $q_riwayat,
+            'nama_bulan' => date("F Y"),
+        ];
+    } else {
+        $search_error = "Siswa dengan NIS atau nama \"$keyword\" tidak ditemukan.";
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -82,7 +151,6 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
     <meta http-equiv="refresh" content="60">
     <title>Sistem Absensi Fingerprint</title>
     <link rel="icon" type="image/png" href="Gambar1.png">
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -204,7 +272,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
         }
         .instruction-list li::before { content: "✓"; color: var(--green); font-weight: 700; font-size: 13px; }
 
-        /* ===== ATTENDANCE RATE BAR (NEW) ===== */
+        /* ===== ATTENDANCE RATE BAR ===== */
         .rate-bar-wrap {
             width: 100%; max-width: 950px; margin-top: 20px;
             background: rgba(30,41,59,0.7);
@@ -250,8 +318,6 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
         .stat-card h2 { font-size: 24px; font-weight: 700; color: #fff; margin: 0; }
         .stat-card .stat-icon { position: absolute; right: 14px; top: 14px; font-size: 20px; opacity: 0.35; }
 
-        /* Ripple */
-        .stat-card { position: relative; overflow: hidden; }
         .ripple {
             position: absolute; border-radius: 50%;
             background: rgba(255,255,255,0.15);
@@ -298,7 +364,6 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
 
         .empty-state { text-align: center; color: #475569; font-size: 12.5px; padding: 24px 0; }
 
-        /* PANEL TABS (mobile) */
         .panel-tabs { display: none; margin-bottom: 10px; }
         .tab-btn {
             flex: 1; padding: 8px; border: none; border-radius: 8px;
@@ -307,7 +372,101 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
         }
         .tab-btn.active { background: var(--primary); color: #fff; }
 
-        /* ===== MINI CHART (NEW) ===== */
+        /* ===== STUDENT SEARCH SECTION ===== */
+        .search-section {
+            width: 100%; max-width: 950px; margin-top: 18px;
+            background: rgba(30,41,59,0.65);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 20px; padding: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+        }
+        .search-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+        }
+        .search-header-left { display: flex; align-items: center; gap: 14px; }
+        .search-icon-wrap { font-size: 26px; background: rgba(59,130,246,0.15); width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .search-header h3 { color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+        .search-header p  { color: #64748b; font-size: 12px; }
+        .search-badge-month { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.25); color: #60a5fa; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 20px; }
+
+        .search-form-wrap   { display: flex; flex-direction: column; gap: 8px; }
+        .search-input-group {
+            display: flex; align-items: center;
+            background: rgba(15,23,42,0.6); border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: 12px; overflow: hidden; transition: border-color 0.2s;
+        }
+        .search-input-group:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+        .search-prefix-icon { padding: 0 14px; font-size: 16px; opacity: 0.6; flex-shrink: 0; }
+        .search-input { flex: 1; background: none; border: none; outline: none; color: #fff; font-size: 14px; font-family: 'Poppins', sans-serif; padding: 13px 8px; }
+        .search-input::placeholder { color: #475569; }
+        .search-btn { background: var(--primary); color: #fff; border: none; padding: 13px 22px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Poppins', sans-serif; transition: background 0.2s; white-space: nowrap; }
+        .search-btn:hover { background: var(--primary-hover); }
+        .search-hint { font-size: 11.5px; color: #475569; }
+        .search-hint strong { color: #64748b; }
+
+        .search-error-box { margin-top: 16px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; padding: 12px 16px; border-radius: 10px; font-size: 13px; display: flex; gap: 10px; align-items: center; }
+
+        /* Result Wrapper */
+        .search-result-wrap { margin-top: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+        /* Divider inside search */
+        .search-result-divider { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 4px 0; }
+
+        /* Profile Card */
+        .result-profile-card { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.18); border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .result-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; flex-shrink: 0; }
+        .result-profile-info { flex: 1; }
+        .result-name { color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+        .result-meta { display: flex; gap: 7px; flex-wrap: wrap; }
+        .result-chip { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+        .chip-good { background: rgba(16,185,129,0.15) !important; border-color: rgba(16,185,129,0.3) !important; color: #34d399 !important; }
+        .chip-warn { background: rgba(245,158,11,0.15) !important; border-color: rgba(245,158,11,0.3) !important; color: #fbbf24 !important; }
+        .chip-bad  { background: rgba(239,68,68,0.15) !important; border-color: rgba(239,68,68,0.3) !important; color: #f87171 !important; }
+        .result-period { text-align: right; }
+        .period-label { display: block; font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+        .period-val   { font-size: 12px; font-weight: 600; color: #60a5fa; }
+
+        .result-stat-label, .result-history-label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Result Stats Grid */
+        .result-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+        .rs-card { background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 14px 12px; text-align: center; transition: transform 0.18s; }
+        .rs-card:hover { transform: translateY(-2px); }
+        .rs-icon  { font-size: 18px; margin-bottom: 6px; }
+        .rs-val   { font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
+        .rs-label { font-size: 11px; font-weight: 600; color: #94a3b8; margin: 4px 0 3px; }
+        .rs-sub   { font-size: 10px; color: #475569; }
+        .rs-hadir { border-left: 3px solid #10b981; }
+        .rs-alfa  { border-left: 3px solid #ef4444; }
+        .rs-sakit { border-left: 3px solid #0ea5e9; }
+        .rs-izin  { border-left: 3px solid #a855f7; }
+
+        /* Progress */
+        .result-progress-wrap { background: rgba(15,23,42,0.4); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 16px; }
+        .rp-label { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: #94a3b8; margin-bottom: 10px; font-weight: 500; }
+        .rp-pct   { font-size: 20px; font-weight: 700; }
+        .rp-track { height: 10px; background: rgba(255,255,255,0.06); border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+        .rp-fill  { height: 100%; border-radius: 10px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+        .rp-legend { display: flex; justify-content: space-between; font-size: 11px; color: #475569; flex-wrap: wrap; gap: 4px; }
+
+        /* History List */
+        .result-history-list { display: flex; flex-direction: column; gap: 6px; }
+        .history-item { display: flex; align-items: center; gap: 12px; background: rgba(15,23,42,0.35); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; padding: 10px 14px; transition: background 0.15s; }
+        .history-item:hover { background: rgba(59,130,246,0.06); }
+        .hi-date { display: flex; flex-direction: column; width: 62px; flex-shrink: 0; }
+        .hi-day  { font-size: 10px; color: #64748b; font-weight: 500; }
+        .hi-tgl  { font-size: 12.5px; color: #fff; font-weight: 600; }
+        .hi-time { font-size: 12px; color: #64748b; flex: 1; }
+        .hi-badge { margin-left: auto; }
+
+        /* All-time */
+        .result-alltime { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .alltime-label  { font-size: 11px; font-weight: 600; color: #64748b; margin-right: 4px; }
+        .alltime-item   { font-size: 12px; font-weight: 600; }
+
+        /* ===== MINI CHART ===== */
         .chart-section {
             width: 100%; max-width: 950px; margin-top: 14px;
             background: rgba(30,41,59,0.65);
@@ -320,36 +479,22 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
         .chart-meta { font-size: 11px; color: #64748b; }
         .bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 80px; }
         .bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .bar-fill {
-            width: 100%; border-radius: 5px 5px 0 0;
-            transition: height 1.2s cubic-bezier(0.4,0,0.2,1);
-            min-height: 3px; position: relative; cursor: default;
-        }
+        .bar-fill { width: 100%; border-radius: 5px 5px 0 0; transition: height 1.2s cubic-bezier(0.4,0,0.2,1); min-height: 3px; position: relative; cursor: default; }
         .bar-fill:hover { filter: brightness(1.2); }
-        .bar-fill .bar-tip {
-            position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
-            font-size: 10px; font-weight: 600; color: #fff;
-            background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px;
-            white-space: nowrap; opacity: 0; transition: opacity 0.2s;
-        }
+        .bar-fill .bar-tip { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 600; color: #fff; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; white-space: nowrap; opacity: 0; transition: opacity 0.2s; }
         .bar-fill:hover .bar-tip { opacity: 1; }
         .bar-label { font-size: 10px; color: #64748b; text-align: center; }
         .bar-val   { font-size: 11px; font-weight: 600; color: #94a3b8; }
 
-        /* ===== TICKER (NEW) ===== */
+        /* ===== TICKER ===== */
         .ticker-wrap {
             width: 100%; max-width: 950px; margin-top: 14px;
             background: rgba(15,23,42,0.6);
             border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 10px; padding: 0; overflow: hidden;
+            border-radius: 10px; overflow: hidden;
             display: flex; align-items: stretch;
         }
-        .ticker-label {
-            background: var(--primary); color: #fff; font-size: 10px; font-weight: 700;
-            padding: 0 14px; display: flex; align-items: center;
-            white-space: nowrap; letter-spacing: 0.5px; flex-shrink: 0;
-            border-radius: 10px 0 0 10px;
-        }
+        .ticker-label { background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; padding: 0 14px; display: flex; align-items: center; white-space: nowrap; letter-spacing: 0.5px; flex-shrink: 0; border-radius: 10px 0 0 10px; }
         .ticker-track { overflow: hidden; flex: 1; height: 36px; display: flex; align-items: center; }
         .ticker-inner { display: flex; gap: 0; animation: ticker 18s linear infinite; white-space: nowrap; }
         .ticker-inner:hover { animation-play-state: paused; }
@@ -394,84 +539,38 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             box-shadow: 0 20px 60px rgba(0,0,0,0.35); color: var(--text-dark);
         }
         .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
-        .close-btn {
-            position: absolute; top: 14px; right: 16px; font-size: 20px;
-            color: #94a3b8; cursor: pointer; background: none; border: none;
-            width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; transition: all 0.18s;
-        }
+        .close-btn { position: absolute; top: 14px; right: 16px; font-size: 20px; color: #94a3b8; cursor: pointer; background: none; border: none; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.18s; }
         .close-btn:hover { background: #f1f5f9; color: var(--red); }
         .modal-box h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
         .modal-box p.subtitle { color: var(--text-light); font-size: 13px; margin-bottom: 22px; }
         .input-group { margin-bottom: 14px; text-align: left; }
         .input-group label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        .input-group input {
-            width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0;
-            border-radius: 10px; font-size: 14px; font-family: inherit;
-            outline: none; transition: all 0.2s;
-        }
+        .input-group input { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; transition: all 0.2s; }
         .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-        .btn-submit {
-            width: 100%; padding: 12px; border: none; background: var(--primary);
-            color: white; border-radius: 10px; cursor: pointer; font-weight: 600;
-            font-size: 14px; margin-top: 8px; transition: all 0.2s; font-family: inherit;
-        }
+        .btn-submit { width: 100%; padding: 12px; border: none; background: var(--primary); color: white; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px; margin-top: 8px; transition: all 0.2s; font-family: inherit; }
         .btn-submit:hover { background: var(--primary-hover); transform: translateY(-1px); }
         .alert { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px; text-align: left; display: flex; align-items: center; gap: 8px; }
         .divider { display: flex; align-items: center; color: var(--text-light); font-size: 11px; margin: 18px 0; }
         .divider::before,.divider::after { content:''; flex:1; border-bottom:1px solid #e2e8f0; }
         .divider::before { margin-right:10px; } .divider::after { margin-left:10px; }
-        .btn-google {
-            width:100%; padding:10px; background:#fff; border:1.5px solid #e2e8f0;
-            color:var(--text-dark); border-radius:10px; font-weight:500; font-size:13px;
-            cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px;
-            transition:all 0.2s; font-family:inherit;
-        }
+        .btn-google { width:100%; padding:10px; background:#fff; border:1.5px solid #e2e8f0; color:var(--text-dark); border-radius:10px; font-weight:500; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; transition:all 0.2s; font-family:inherit; }
         .btn-google:hover { background:#f8fafc; border-color:#cbd5e1; }
         .btn-google img { width:17px; height:17px; }
 
         /* TOAST */
-        .toast {
-            position: fixed; bottom: 28px; left: 50%;
-            transform: translateX(-50%) translateY(10px);
-            background: rgba(15,23,42,0.95); color: #fff; border: 1px solid rgba(255,255,255,0.1);
-            padding: 11px 20px; border-radius: 10px; font-size: 13px;
-            z-index: 3000; opacity: 0; pointer-events: none;
-            transition: all 0.3s; white-space: nowrap;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-        }
+        .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(10px); background: rgba(15,23,42,0.95); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 11px 20px; border-radius: 10px; font-size: 13px; z-index: 3000; opacity: 0; pointer-events: none; transition: all 0.3s; white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
         /* SCROLL TO TOP */
-        .scroll-top {
-            position: fixed; bottom: 24px; right: 20px; z-index: 500;
-            width: 40px; height: 40px; border-radius: 10px;
-            background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.35);
-            color: var(--primary); font-size: 18px; cursor: pointer;
-            display: none; align-items: center; justify-content: center;
-            transition: all 0.2s; backdrop-filter: blur(10px);
-        }
+        .scroll-top { position: fixed; bottom: 24px; right: 20px; z-index: 500; width: 40px; height: 40px; border-radius: 10px; background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.35); color: var(--primary); font-size: 18px; cursor: pointer; display: none; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(10px); }
         .scroll-top.visible { display: flex; }
         .scroll-top:hover { background: rgba(59,130,246,0.35); }
 
-        /* FAB mobile */
-        .fab-login {
-            display: none; position: fixed; bottom: 20px; right: 20px; z-index: 500;
-            width: 52px; height: 52px; border-radius: 50%;
-            background: var(--primary); color: #fff; border: none;
-            font-size: 20px; cursor: pointer;
-            box-shadow: 0 4px 18px rgba(59,130,246,0.45);
-            align-items: center; justify-content: center; transition: all 0.2s;
-        }
+        .fab-login { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 500; width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 4px 18px rgba(59,130,246,0.45); align-items: center; justify-content: center; transition: all 0.2s; }
         .fab-login:hover { transform: scale(1.08); }
 
         /* FOOTER */
-        .footer {
-            text-align: center; padding: 18px 20px;
-            color: #475569; font-size: 12px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-            margin-top: auto;
-        }
+        .footer { text-align: center; padding: 18px 20px; color: #475569; font-size: 12px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
 
         /* ===== FADE-IN ON SCROLL ===== */
         .fade-in { opacity: 0; transform: translateY(22px); transition: opacity 0.55s ease, transform 0.55s ease; }
@@ -488,7 +587,6 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
             .stat-card h2 { font-size: 20px; }
             .rate-bar-wrap { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .rate-segments { flex-direction: row; }
             .dashboard-panels { grid-template-columns: 1fr; }
             .panel-tabs { display: flex; gap: 8px; }
             .panel-box.hidden-mobile { display: none; }
@@ -499,136 +597,58 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             .fab-login { display: flex; }
             .scroll-top { bottom: 80px; }
             .ticker-item { padding: 0 20px; }
+            .result-stats-grid { grid-template-columns: 1fr 1fr; }
+            .result-profile-card { flex-direction: column; align-items: flex-start; }
+            .result-period { text-align: left; }
+            .result-alltime { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .search-btn { padding: 13px 14px; }
+            .search-section { padding: 18px 14px; }
         }
-
         @media (max-width: 400px) {
             .clock-display { font-size: 32px; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
+            .result-stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
         }
 
         /* ===== SIDE DECORATIONS ===== */
-        .side-deco {
-            position: fixed; top: 0; bottom: 0; width: calc((100vw - 990px) / 2);
-            pointer-events: none; z-index: 0; overflow: hidden;
-        }
+        .side-deco { position: fixed; top: 0; bottom: 0; width: calc((100vw - 990px) / 2); pointer-events: none; z-index: 0; overflow: hidden; }
         .side-left  { left: 0; }
         .side-right { right: 0; }
-
-        /* Hide on narrow screens */
         @media (max-width: 1200px) { .side-deco { display: none; } }
 
-        /* Floating rings (fingerprint-like circles) */
-        .ring {
-            position: absolute; border-radius: 50%;
-            border: 1px solid rgba(59,130,246,0.18);
-            animation: ringFloat linear infinite;
-        }
-        @keyframes ringFloat {
-            0%   { transform: translateY(0) scale(1); opacity: 0; }
-            15%  { opacity: 1; }
-            85%  { opacity: 1; }
-            100% { transform: translateY(-100vh) scale(1.1); opacity: 0; }
-        }
+        .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(59,130,246,0.18); animation: ringFloat linear infinite; }
+        @keyframes ringFloat { 0% { transform: translateY(0) scale(1); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(-100vh) scale(1.1); opacity: 0; } }
 
-        /* Vertical scan line */
-        .scan-line {
-            position: absolute; left: 50%; width: 1px;
-            background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.5), rgba(16,185,129,0.3), transparent);
-            animation: scanMove 4s ease-in-out infinite;
-            transform: translateX(-50%);
-        }
-        @keyframes scanMove {
-            0%,100% { top: 10%; height: 25%; opacity: 0.4; }
-            50%      { top: 60%; height: 30%; opacity: 0.9; }
-        }
+        .scan-line { position: absolute; left: 50%; width: 1px; background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.5), rgba(16,185,129,0.3), transparent); animation: scanMove 4s ease-in-out infinite; transform: translateX(-50%); }
+        @keyframes scanMove { 0%,100% { top: 10%; height: 25%; opacity: 0.4; } 50% { top: 60%; height: 30%; opacity: 0.9; } }
 
-        /* Floating dots */
-        .fdot {
-            position: absolute; border-radius: 50%;
-            background: rgba(59,130,246,0.35);
-            animation: dotBlink ease-in-out infinite;
-        }
-        @keyframes dotBlink {
-            0%,100% { opacity: 0.15; transform: scale(1); }
-            50%      { opacity: 0.7; transform: scale(1.4); }
-        }
+        .fdot { position: absolute; border-radius: 50%; background: rgba(59,130,246,0.35); animation: dotBlink ease-in-out infinite; }
+        @keyframes dotBlink { 0%,100% { opacity: 0.15; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.4); } }
 
-        /* Vertical label */
-        .side-label {
-            position: absolute; bottom: 30%; left: 50%;
-            transform: translateX(-50%) rotate(-90deg);
-            font-size: 10px; font-weight: 700; letter-spacing: 3px;
-            color: rgba(255,255,255,0.1); white-space: nowrap;
-            text-transform: uppercase;
-        }
+        .side-label { position: absolute; bottom: 30%; left: 50%; transform: translateX(-50%) rotate(-90deg); font-size: 10px; font-weight: 700; letter-spacing: 3px; color: rgba(255,255,255,0.1); white-space: nowrap; text-transform: uppercase; }
 
-        /* Grid lines */
-        .side-grid {
-            position: absolute; inset: 0;
-            background-image:
-                linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
-            background-size: 30px 30px;
-            mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
-        }
+        .side-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px); background-size: 30px 30px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%); }
 
-        /* Status pill */
-        .side-status {
-            position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; gap: 12px;
-        }
-        .side-status-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-        }
-        .side-status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        .side-status-label {
-            font-size: 9px; font-weight: 600; letter-spacing: 1px;
-            text-transform: uppercase; writing-mode: vertical-rl;
-            color: rgba(255,255,255,0.25);
-        }
+        .side-status { position: absolute; top: 30%; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .side-status-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .side-status-dot { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+        .side-status-label { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; writing-mode: vertical-rl; color: rgba(255,255,255,0.25); }
 
-        /* Glowing orb */
-        .side-orb {
-            position: absolute; border-radius: 50%;
-            filter: blur(40px);
-            animation: orbDrift ease-in-out infinite;
-        }
-        @keyframes orbDrift {
-            0%,100% { transform: translateY(0) scale(1); }
-            50%      { transform: translateY(-30px) scale(1.08); }
-        }
+        .side-orb { position: absolute; border-radius: 50%; filter: blur(40px); animation: orbDrift ease-in-out infinite; }
+        @keyframes orbDrift { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-30px) scale(1.08); } }
 
-        /* Corner accent */
-        .corner-tl, .corner-br {
-            position: absolute; width: 30px; height: 30px;
-        }
+        .corner-tl, .corner-br { position: absolute; width: 30px; height: 30px; }
         .corner-tl { top: 80px; left: 12px; border-top: 1px solid rgba(59,130,246,0.3); border-left: 1px solid rgba(59,130,246,0.3); }
         .corner-br { bottom: 60px; right: 12px; border-bottom: 1px solid rgba(59,130,246,0.3); border-right: 1px solid rgba(59,130,246,0.3); }
 
-        /* Animated data stream (right side) */
-        .data-stream {
-            position: absolute; right: 18px; top: 80px; bottom: 60px;
-            width: 1px; background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.12), transparent);
-        }
-        .stream-particle {
-            position: absolute; width: 3px; height: 3px; border-radius: 50%;
-            background: var(--primary); right: -1px;
-            animation: streamFall linear infinite;
-        }
-        @keyframes streamFall {
-            from { top: 0; opacity: 0; }
-            10%  { opacity: 1; }
-            90%  { opacity: 1; }
-            to   { top: 100%; opacity: 0; }
-        }
+        .data-stream { position: absolute; right: 18px; top: 80px; bottom: 60px; width: 1px; background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.12), transparent); }
+        .stream-particle { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--primary); right: -1px; animation: streamFall linear infinite; }
+        @keyframes streamFall { from { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { top: 100%; opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <!-- ===== LEFT SIDE DECORATION ===== -->
+    <!-- LEFT SIDE DECORATION -->
     <div class="side-deco side-left">
         <div class="side-grid"></div>
         <div class="side-orb" style="width:180px;height:180px;background:rgba(59,130,246,0.07);top:20%;left:-40px;animation-duration:8s;"></div>
@@ -647,7 +667,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
         <div class="side-label">Sistem Absensi • SMKN 2 Yogyakarta</div>
     </div>
 
-    <!-- ===== RIGHT SIDE DECORATION ===== -->
+    <!-- RIGHT SIDE DECORATION -->
     <div class="side-deco side-right">
         <div class="side-grid"></div>
         <div class="side-orb" style="width:160px;height:160px;background:rgba(16,185,129,0.06);top:30%;right:-30px;animation-duration:10s;animation-delay:-3s;"></div>
@@ -705,7 +725,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
 
     <main class="main-container">
 
-        <!-- WELCOME BOX (original, unchanged) -->
+        <!-- WELCOME BOX -->
         <div class="welcome-box fade-in">
             <div class="status-badge">
                 <div class="status-dot"></div>
@@ -750,7 +770,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             </div>
         </div>
 
-        <!-- ATTENDANCE RATE BAR (NEW) -->
+        <!-- ATTENDANCE RATE BAR -->
         <div class="rate-bar-wrap fade-in">
             <div class="rate-label">
                 <strong><?= $persen_hadir ?>%</strong>
@@ -772,7 +792,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             </div>
         </div>
 
-        <!-- STATS (original, with enhancements) -->
+        <!-- STATS -->
         <div class="stats-grid fade-in">
             <div class="stat-card card-total" onclick="showToast('📋 Total <?= $total_absen ?> record absensi tercatat hari ini')">
                 <div class="stat-icon">📋</div>
@@ -797,13 +817,12 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             </div>
         </div>
 
-        <!-- TICKER (NEW) -->
+        <!-- TICKER -->
         <div class="ticker-wrap fade-in">
             <div class="ticker-label">🔴 LIVE</div>
             <div class="ticker-track">
                 <div class="ticker-inner" id="tickerInner">
                     <?php
-                    // Fetch ulang untuk ticker
                     $tk = mysqli_query($koneksi,"SELECT u.nama, u.kelas, a.keterangan, a.waktu FROM absensi a JOIN users u ON a.id_finger=u.finger_id WHERE a.tanggal='$tgl_hari_ini' ORDER BY a.waktu DESC LIMIT 8");
                     $ticker_items = "";
                     if(mysqli_num_rows($tk) > 0){
@@ -813,14 +832,13 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
                     } else {
                         $ticker_items = "<span class='ticker-item'>Belum ada aktivitas scan hari ini. Silakan gunakan perangkat fingerprint di lobi.</span>";
                     }
-                    // Duplikasi untuk loop seamless
                     echo $ticker_items . $ticker_items;
                     ?>
                 </div>
             </div>
         </div>
 
-        <!-- PANELS (original + tab switching on mobile) -->
+        <!-- PANELS -->
         <div style="width:100%;max-width:950px;margin-top:14px;">
             <div class="panel-tabs">
                 <button class="tab-btn active" onclick="switchTab('live', this)">📡 Riwayat Scan</button>
@@ -877,7 +895,191 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             </div>
         </div>
 
-        <!-- MINI BAR CHART (NEW) -->
+        <!-- ===== CEK ABSENSI SISWA ===== -->
+        <div class="search-section fade-in" id="cariAbsensi">
+            <div class="search-header">
+                <div class="search-header-left">
+                    <div class="search-icon-wrap">🔍</div>
+                    <div>
+                        <h3>Cek Absensi Saya</h3>
+                        <p>Cari dengan NIS atau Nama untuk melihat rekap kehadiranmu</p>
+                    </div>
+                </div>
+                <span class="search-badge-month"><?= date("F Y") ?></span>
+            </div>
+
+            <form method="GET" action="#cariAbsensi" class="search-form-wrap">
+                <div class="search-input-group">
+                    <span class="search-prefix-icon">👤</span>
+                    <input
+                        type="text"
+                        name="keyword_siswa"
+                        class="search-input"
+                        placeholder="Ketik NIS atau Nama Siswa..."
+                        value="<?= htmlspecialchars($search_query_val) ?>"
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" name="cari_siswa" class="search-btn">Cari →</button>
+                </div>
+                <p class="search-hint">Contoh: ketik <strong>1234567</strong> (NIS) atau <strong>Ahmad</strong> (nama)</p>
+            </form>
+
+            <?php if ($search_error): ?>
+                <div class="search-error-box">
+                    <span>⚠️</span>
+                    <span><?= htmlspecialchars($search_error) ?></span>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($search_result):
+                $s   = $search_result['siswa'];
+                $sb  = $search_result['stat_bulan'];
+                $sa  = $search_result['stat_all'];
+                $nb  = $search_result['nama_bulan'];
+                $rw  = $search_result['riwayat'];
+                $tepat_b  = (int)($sb['tepat'] ?? 0);
+                $telat_b  = (int)($sb['terlambat'] ?? 0);
+                $sakit_b  = (int)($sb['sakit'] ?? 0);
+                $izin_b   = (int)($sb['izin'] ?? 0);
+                $alfa_b   = (int)($sb['alfa'] ?? 0);
+                $total_b  = (int)($sb['total'] ?? 0);
+                $hadir_b  = $tepat_b + $telat_b;
+                $hari_sekolah = max($total_b, 1);
+                $pct_hadir_s  = round(($hadir_b / $hari_sekolah) * 100);
+            ?>
+            <div class="search-result-wrap">
+
+                <!-- Profil Siswa -->
+                <div class="result-profile-card">
+                    <div class="result-avatar"><?= mb_strtoupper(mb_substr($s['nama'], 0, 1)) ?></div>
+                    <div class="result-profile-info">
+                        <div class="result-name"><?= htmlspecialchars($s['nama']) ?></div>
+                        <div class="result-meta">
+                            <span class="result-chip">Kelas <?= htmlspecialchars($s['kelas'] ?? '-') ?></span>
+                            <?php if (!empty($s['nis'])): ?>
+                                <span class="result-chip">NIS <?= htmlspecialchars($s['nis']) ?></span>
+                            <?php endif; ?>
+                            <span class="result-chip chip-<?= ($alfa_b == 0) ? 'good' : (($alfa_b <= 2) ? 'warn' : 'bad') ?>">
+                                <?= ($alfa_b == 0) ? '✅ Kehadiran Baik' : ($alfa_b <= 2 ? '⚠️ Perlu Perhatian' : '🔴 Sering Alfa') ?>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="result-period">
+                        <span class="period-label">Periode</span>
+                        <span class="period-val"><?= $nb ?></span>
+                    </div>
+                </div>
+
+                <!-- Stat Cards Bulan Ini -->
+                <div class="result-stat-label">📅 Rekap Bulan Ini — <?= $nb ?></div>
+                <div class="result-stats-grid">
+                    <div class="rs-card rs-hadir">
+                        <div class="rs-icon">✅</div>
+                        <div class="rs-val"><?= $hadir_b ?></div>
+                        <div class="rs-label">Hari Hadir</div>
+                        <div class="rs-sub"><?= $tepat_b ?> tepat · <?= $telat_b ?> terlambat</div>
+                    </div>
+                    <div class="rs-card rs-alfa">
+                        <div class="rs-icon">🚫</div>
+                        <div class="rs-val" style="<?= $alfa_b > 2 ? 'color:#ef4444' : '' ?>"><?= $alfa_b ?></div>
+                        <div class="rs-label">Hari Alfa</div>
+                        <div class="rs-sub">Tanpa keterangan</div>
+                    </div>
+                    <div class="rs-card rs-sakit">
+                        <div class="rs-icon">🏥</div>
+                        <div class="rs-val"><?= $sakit_b ?></div>
+                        <div class="rs-label">Hari Sakit</div>
+                        <div class="rs-sub">Ada surat dokter</div>
+                    </div>
+                    <div class="rs-card rs-izin">
+                        <div class="rs-icon">📋</div>
+                        <div class="rs-val"><?= $izin_b ?></div>
+                        <div class="rs-label">Hari Izin</div>
+                        <div class="rs-sub">Ada keterangan</div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar Kehadiran -->
+                <div class="result-progress-wrap">
+                    <div class="rp-label">
+                        <span>Tingkat Kehadiran Bulan Ini</span>
+                        <span class="rp-pct" style="color:<?= $pct_hadir_s >= 80 ? '#10b981' : ($pct_hadir_s >= 60 ? '#f59e0b' : '#ef4444') ?>">
+                            <?= $pct_hadir_s ?>%
+                        </span>
+                    </div>
+                    <div class="rp-track">
+                        <div class="rp-fill" style="
+                            width:<?= $pct_hadir_s ?>%;
+                            background:<?= $pct_hadir_s >= 80
+                                ? 'linear-gradient(90deg,#10b981,#34d399)'
+                                : ($pct_hadir_s >= 60
+                                    ? 'linear-gradient(90deg,#f59e0b,#fbbf24)'
+                                    : 'linear-gradient(90deg,#ef4444,#f87171)') ?>;
+                        "></div>
+                    </div>
+                    <div class="rp-legend">
+                        <span><?= $hadir_b ?> hari hadir dari <?= $hari_sekolah ?> hari tercatat</span>
+                        <?php if ($pct_hadir_s >= 80): ?>
+                            <span style="color:#10b981">🎉 Kehadiran sangat baik!</span>
+                        <?php elseif ($pct_hadir_s >= 60): ?>
+                            <span style="color:#f59e0b">⚠️ Perlu ditingkatkan</span>
+                        <?php else: ?>
+                            <span style="color:#ef4444">🔴 Kehadiran rendah, segera konsultasi</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Riwayat 6 Terakhir -->
+                <div class="result-history-label">🕐 Riwayat Scan Bulan Ini (6 Terakhir)</div>
+                <div class="result-history-list">
+                    <?php
+                    $hari_id = ['Sunday'=>'Minggu','Monday'=>'Senin','Tuesday'=>'Selasa',
+                                'Wednesday'=>'Rabu','Thursday'=>'Kamis','Friday'=>'Jumat','Saturday'=>'Sabtu'];
+                    $badge_map = [
+                        'Tepat Waktu' => ['class'=>'badge-tepat','icon'=>'✅'],
+                        'Terlambat'   => ['class'=>'badge-telat','icon'=>'⚠️'],
+                        'Sakit'       => ['class'=>'badge-sakit','icon'=>'🏥'],
+                        'Izin'        => ['class'=>'badge-izin', 'icon'=>'📋'],
+                        'Alfa'        => ['class'=>'badge-alfa', 'icon'=>'🚫'],
+                    ];
+                    if (mysqli_num_rows($rw) > 0):
+                        while ($r = mysqli_fetch_assoc($rw)):
+                            $k   = $r['keterangan'];
+                            $b   = $badge_map[$k] ?? ['class'=>'badge-alfa','icon'=>'❓'];
+                            $hari_en = date("l", strtotime($r['tanggal']));
+                    ?>
+                    <div class="history-item">
+                        <div class="hi-date">
+                            <span class="hi-day"><?= $hari_id[$hari_en] ?? $hari_en ?></span>
+                            <span class="hi-tgl"><?= date("d M", strtotime($r['tanggal'])) ?></span>
+                        </div>
+                        <div class="hi-time"><?= $r['waktu'] ?></div>
+                        <div class="hi-badge">
+                            <span class="<?= $b['class'] ?>"><?= $b['icon'] ?> <?= $k ?></span>
+                        </div>
+                    </div>
+                    <?php endwhile; else: ?>
+                        <div class="empty-state" style="padding:20px 0">Belum ada data absensi bulan ini.</div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Total Keseluruhan -->
+                <div class="result-alltime">
+                    <span class="alltime-label">📊 Total Keseluruhan (Semua Waktu):</span>
+                    <span class="alltime-item" style="color:#10b981">✅ <?= (int)$sa['tepat'] ?> Tepat</span>
+                    <span class="alltime-item" style="color:#f59e0b">⚠️ <?= (int)$sa['terlambat'] ?> Terlambat</span>
+                    <span class="alltime-item" style="color:#0ea5e9">🏥 <?= (int)$sa['sakit'] ?> Sakit</span>
+                    <span class="alltime-item" style="color:#a855f7">📋 <?= (int)$sa['izin'] ?> Izin</span>
+                    <span class="alltime-item" style="color:#ef4444">🚫 <?= (int)$sa['alfa'] ?> Alfa</span>
+                </div>
+
+            </div>
+            <?php endif; ?>
+        </div>
+        <!-- ===== END CEK ABSENSI ===== -->
+
+        <!-- MINI BAR CHART -->
         <div class="chart-section fade-in">
             <div class="chart-header">
                 <h3>📊 Komposisi Kehadiran Hari Ini</h3>
@@ -900,7 +1102,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
                 <div class="bar-item">
                     <div class="bar-val"><?= $b['val'] ?></div>
                     <div class="bar-fill" style="background:<?= $b['color'] ?>;height:<?= max($pct,3) ?>px"
-                         data-h="<?= max($pct,3) ?>" data-init="0">
+                         data-h="<?= max($pct,3) ?>">
                         <div class="bar-tip"><?= $b['label'] ?>: <?= $b['val'] ?></div>
                     </div>
                     <div class="bar-label"><?= $b['label'] ?></div>
@@ -909,7 +1111,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             </div>
         </div>
 
-        <!-- FEATURES (original, grid layout) -->
+        <!-- FEATURES -->
         <div class="features fade-in">
             <div class="feature-card">
                 <div class="feat-icon">⚡</div>
@@ -927,7 +1129,7 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
 
     </main>
 
-    <!-- MODAL (original + improved) -->
+    <!-- MODAL LOGIN -->
     <div class="modal-overlay <?= $show_modal ? 'active' : '' ?>" id="loginModal">
         <div class="modal-box">
             <button class="close-btn" onclick="closeModal()">✕</button>
@@ -959,15 +1161,11 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
         &copy; <?= date("Y") ?> SMK Negeri 2 Yogyakarta. Semua Hak Cipta Dilindungi.
     </footer>
 
-    <!-- FAB mobile -->
     <?php if(!isset($_SESSION['admin'])): ?>
     <button class="fab-login" onclick="openModal()">🔐</button>
     <?php endif; ?>
 
-    <!-- Scroll top -->
     <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
-
-    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
@@ -1085,6 +1283,14 @@ $persen_hadir = $total_siswa > 0 ? round(($jml_tepat / $total_siswa) * 100) : 0;
             document.getElementById('panel-live').classList.add('hidden-mobile');
         }
     }
+
+    // ===== AUTO SCROLL KE HASIL SEARCH =====
+    <?php if ($search_result || $search_error): ?>
+    window.addEventListener('load', () => {
+        const el = document.getElementById('cariAbsensi');
+        if(el) setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 300);
+    });
+    <?php endif; ?>
     </script>
 
 </body>
