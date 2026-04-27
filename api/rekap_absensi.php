@@ -81,6 +81,7 @@ $jml_sakit=$stat['sakit']??0;  $jml_izin=$stat['izin']??0;   $jml_alfa=$stat['al
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rekap Absensi — Sistem Absensi</title>
+<link rel="icon" type="image/png" href="Gambar1.png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
