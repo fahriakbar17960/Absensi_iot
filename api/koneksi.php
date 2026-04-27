@@ -1,19 +1,17 @@
 <?php
 // Data dari Clever Cloud
-$host = "bcgqnmv1lwnzerqzgdft-mysql.services.clever-cloud.com";
-$user = "umqkft2nhxc4nnyo";
-$pass = "z8KBUIqMUD7sxNEtZyfJ";
-$db   = "bcgqnmv1lwnzerqzgdft";
+// Tips: Pastikan tidak ada spasi tambahan pada string koneksi
+$host = trim("bcgqnmv1lwnzerqzgdft-mysql.services.clever-cloud.com");
+$user = trim("umqkft2nhxc4nnyo");
+$pass = trim("z8KBUIqMUD7sxNEtZyfJ");
+$db   = trim("bcgqnmv1lwnzerqzgdft");
 
 // Membuat koneksi
-$koneksi = mysqli_connect($host, $user, $pass, $db);
-
-// Menyamakan variabel agar tidak error di file lain
-$conn = $koneksi; 
-
-// Cek koneksi
-if (!$koneksi) {
-    die("Koneksi ke database gagal: " . mysqli_connect_error());
+try {
+    $koneksi = mysqli_connect($host, $user, $pass, $db);
+    $conn = $koneksi; // Menyamakan variabel agar kompatibel dengan semua file
+} catch (mysqli_sql_exception $e) {
+    die("Koneksi ke database gagal: " . $e->getMessage());
 }
 
 // Set timezone agar waktu sesuai
