@@ -307,6 +307,76 @@ tbody tr.row-new:hover td { background:rgba(245,158,11,0.1); }
   .stats-grid { grid-template-columns:1fr; }
   .btn { padding:8px 14px; font-size:12px; }
 }
+/* ===== HAMBURGER & MOBILE MENU ===== */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.hamburger span {
+  display: block;
+  width: 100%; height: 2px;
+  background: #94a3b8;
+  border-radius: 2px;
+  transition: all .3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 62px; left: 0; right: 0;
+  background: rgba(8,15,28,0.97);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  z-index: 199;
+  padding: 10px 16px 16px;
+  flex-direction: column;
+  gap: 4px;
+  transform: translateY(-8px);
+  opacity: 0;
+  transition: all .25s ease;
+}
+.mobile-menu.open {
+  display: flex;
+  transform: translateY(0);
+  opacity: 1;
+}
+.mobile-menu .nav-link {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #94a3b8;
+}
+.mobile-menu .nav-link.active {
+  background: rgba(59,130,246,0.2);
+  color: var(--primary);
+}
+.mobile-menu .nav-link:hover {
+  background: rgba(59,130,246,0.12);
+  color: #93c5fd;
+}
+.mobile-menu-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 6px 0;
+}
+
+@media (max-width:900px) {
+  .hamburger { display: flex; }
+  .navbar { height: 56px; }
+  .mobile-menu { top: 56px; }
+}
 </style>
 </head>
 <body>
@@ -332,9 +402,22 @@ tbody tr.row-new:hover td { background:rgba(245,158,11,0.1); }
   <div class="nav-right">
     <div class="nav-clock" id="clock">—</div>
     <a href="index.php" class="btn btn-home">← Kembali</a>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
   </div>
 </nav>
 
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="index.php" class="nav-link">🏠 Home</a>
+  <a href="dashboard.php" class="nav-link active">👥 Data Siswa</a>
+  <a href="rekap_absensi.php" class="nav-link">📊 Rekap</a>
+  <div class="mobile-menu-divider"></div>
+  <a href="index.php" class="nav-link">← Kembali ke Beranda</a>
+</div>
 <!-- MAIN -->
 <main>
 
@@ -543,6 +626,24 @@ tbody tr.row-new:hover td { background:rgba(245,158,11,0.1); }
 <script>
 // Clock
 function tick() {
+    // Hamburger menu
+function toggleMenu() {
+  const btn  = document.getElementById('hamburger');
+  const menu = document.getElementById('mobileMenu');
+  btn.classList.toggle('open');
+  menu.classList.toggle('open');
+}
+
+// Tutup menu kalau klik di luar
+document.addEventListener('click', function(e) {
+  const btn  = document.getElementById('hamburger');
+  const menu = document.getElementById('mobileMenu');
+  if (!btn.contains(e.target) && !menu.contains(e.target)) {
+    btn.classList.remove('open');
+    menu.classList.remove('open');
+  }
+});
+    
   const n = new Date();
   document.getElementById('clock').textContent =
     n.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'}) + ' · ' +
