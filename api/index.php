@@ -203,80 +203,6 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
         .dashboard-btn { background: var(--green); }
         .dashboard-btn:hover { background: #059669; box-shadow: 0 6px 16px rgba(16,185,129,0.4); }
 
-        /* ===== HAMBURGER MENU ===== */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            gap: 5px;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 10px;
-            padding: 9px 10px;
-            cursor: pointer;
-            transition: background 0.2s;
-            z-index: 1100;
-        }
-        .hamburger:hover { background: rgba(255,255,255,0.13); }
-        .hamburger span {
-            display: block; width: 22px; height: 2px;
-            background: #fff; border-radius: 2px;
-            transition: all 0.3s ease;
-            transform-origin: center;
-        }
-        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-        .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-        /* Mobile Nav Drawer */
-        .mobile-nav {
-            display: none;
-            position: fixed;
-            top: 60px; left: 0; right: 0;
-            background: rgba(10, 18, 35, 0.97);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            padding: 16px;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 999;
-            transform: translateY(-10px);
-            opacity: 0;
-            transition: all 0.25s ease;
-        }
-        .mobile-nav.open {
-            display: flex;
-            transform: translateY(0);
-            opacity: 1;
-        }
-        .mobile-nav-divider {
-            height: 1px;
-            background: rgba(255,255,255,0.07);
-            margin: 4px 0;
-        }
-        .mobile-nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 12px 14px;
-            border-radius: 12px;
-            color: #cbd5e1;
-            font-size: 14px; font-weight: 500;
-            text-decoration: none;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .mobile-nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-        .mobile-nav-item.primary { background: rgba(59,130,246,0.18); border-color: rgba(59,130,246,0.3); color: #60a5fa; }
-        .mobile-nav-item.primary:hover { background: rgba(59,130,246,0.28); }
-        .mobile-nav-item.success { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.3); color: #34d399; }
-        .mobile-nav-item.danger  { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.25); color: #f87171; }
-        .mobile-nav-label {
-            font-size: 11px; font-weight: 600;
-            color: #475569; text-transform: uppercase; letter-spacing: 0.6px;
-            padding: 4px 6px;
-        }
-
         /* ===== MAIN ===== */
         .main-container {
             flex: 1; padding: 100px 20px 60px;
@@ -634,6 +560,9 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
         .scroll-top.visible { display: flex; }
         .scroll-top:hover { background: rgba(59,130,246,0.35); }
 
+        .fab-login { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 500; width: 52px; height: 52px; border-radius: 50%; background: var(--primary); color: #fff; border: none; font-size: 20px; cursor: pointer; box-shadow: 0 4px 18px rgba(59,130,246,0.45); align-items: center; justify-content: center; transition: all 0.2s; }
+        .fab-login:hover { transform: scale(1.08); }
+
         /* FOOTER */
         .footer { text-align: center; padding: 18px 20px; color: #475569; font-size: 12px; border-top: 1px solid rgba(255,255,255,0.06); margin-top: auto; }
 
@@ -645,8 +574,7 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
         @media (max-width: 768px) {
             .header { padding: 12px 16px; }
             .logo-sub { display: none; }
-            .btn-nav-group { display: none; }
-            .hamburger { display: flex; }
+            .login-btn span { display: none; }
             .main-container { padding: 80px 12px 60px; }
             .welcome-box { padding: 28px 18px; }
             .content-grid { grid-template-columns: 1fr; }
@@ -660,7 +588,8 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
             .bar-chart { gap: 8px; }
             .features { grid-template-columns: 1fr; }
             .feature-card { padding: 16px 14px; }
-            .scroll-top { bottom: 24px; }
+            .fab-login { display: flex; }
+            .scroll-top { bottom: 80px; }
             .ticker-item { padding: 0 20px; }
             .result-stats-grid { grid-template-columns: 1fr 1fr; }
             .result-profile-card { flex-direction: column; align-items: flex-start; }
@@ -778,14 +707,6 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
                 <span class="logo-sub">SMKN 2 Yogyakarta</span>
             </div>
         </div>
-
-        <!-- HAMBURGER (mobile only) -->
-        <button class="hamburger" id="hamburgerBtn" onclick="toggleMobileNav()" aria-label="Menu">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-
         <div class="btn-nav-group">
             <?php if(!isset($_SESSION['admin'])): ?>
                 <button class="login-btn" onclick="openModal()">🔐 <span>Login Admin</span></button>
@@ -795,37 +716,6 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
             <?php endif; ?>
         </div>
     </header>
-
-    <!-- MOBILE NAV DRAWER -->
-    <nav class="mobile-nav" id="mobileNav">
-        <span class="mobile-nav-label">Menu</span>
-
-        <?php if(!isset($_SESSION['admin'])): ?>
-            <div class="mobile-nav-item primary" onclick="closeDrawer(); openModal();">
-                🔐 Login Admin
-            </div>
-        <?php else: ?>
-            <a href="dashboard.php" class="mobile-nav-item success">
-                📊 Dashboard
-            </a>
-            <a href="index.php?logout=true" class="mobile-nav-item danger">
-                ↩ Logout
-            </a>
-        <?php endif; ?>
-
-        <div class="mobile-nav-divider"></div>
-        <span class="mobile-nav-label">Navigasi</span>
-
-        <div class="mobile-nav-item" onclick="closeDrawer(); document.querySelector('.search-section').scrollIntoView({behavior:'smooth'})">
-            🔍 Cek Absensi Saya
-        </div>
-        <div class="mobile-nav-item" onclick="closeDrawer(); document.getElementById('panel-live').scrollIntoView({behavior:'smooth'})">
-            📡 Riwayat Scan Live
-        </div>
-        <div class="mobile-nav-item" onclick="closeDrawer(); document.querySelector('.features').scrollIntoView({behavior:'smooth'})">
-            ℹ️ Tentang Sistem
-        </div>
-    </nav>
 
     <main class="main-container">
 
@@ -1260,6 +1150,10 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
         &copy; <?= date("Y") ?> SMK Negeri 2 Yogyakarta. Semua Hak Cipta Dilindungi.
     </footer>
 
+    <?php if(!isset($_SESSION['admin'])): ?>
+    <button class="fab-login" onclick="openModal()">🔐</button>
+    <?php endif; ?>
+
     <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
     <div class="toast" id="toast"></div>
 
@@ -1285,7 +1179,7 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
     function openModal()  { modal.classList.add('active'); document.body.style.overflow='hidden'; }
     function closeModal() { modal.classList.remove('active'); document.body.style.overflow=''; }
     modal.addEventListener('click', e => { if(e.target===modal) closeModal(); });
-    document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal(); closeDrawer(); } });
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
 
     // ===== TOAST =====
     let toastTimer;
@@ -1378,32 +1272,6 @@ if (isset($_GET['cari_siswa']) && !empty(trim($_GET['keyword_siswa'] ?? ''))) {
             document.getElementById('panel-live').classList.add('hidden-mobile');
         }
     }
-
-    // ===== MOBILE NAV DRAWER =====
-    function toggleMobileNav() {
-        const nav = document.getElementById('mobileNav');
-        const btn = document.getElementById('hamburgerBtn');
-        if (nav.classList.contains('open')) {
-            closeDrawer();
-        } else {
-            nav.classList.add('open');
-            btn.classList.add('open');
-            document.body.style.overflow = 'hidden';
-        }
-    }
-    function closeDrawer() {
-        document.getElementById('mobileNav').classList.remove('open');
-        document.getElementById('hamburgerBtn').classList.remove('open');
-        document.body.style.overflow = '';
-    }
-    // Tutup drawer kalau klik di luar
-    document.addEventListener('click', function(e) {
-        const nav = document.getElementById('mobileNav');
-        const btn = document.getElementById('hamburgerBtn');
-        if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) {
-            closeDrawer();
-        }
-    });
 
     // ===== AUTO SCROLL KE HASIL SEARCH =====
     <?php if ($search_result || $search_error): ?>
