@@ -107,7 +107,7 @@ body {
   min-height:100vh; color:#fff;
 }
 
-/* ===== SIDE DECORATIONS (sama seperti home) ===== */
+/* ===== SIDE DECORATIONS ===== */
 .side-deco {
   position:fixed; top:0; bottom:0;
   width:calc((100vw - 1180px) / 2);
@@ -221,6 +221,73 @@ body {
 .btn-nav-home { background:rgba(255,255,255,0.07); color:#cbd5e1; border:1px solid rgba(255,255,255,0.1); }
 .btn-nav-home:hover { background:rgba(255,255,255,0.12); color:#fff; }
 
+/* ===== HAMBURGER ===== */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 38px; height: 38px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 8px;
+  flex-shrink: 0;
+}
+.hamburger span {
+  display: block;
+  width: 100%; height: 2px;
+  background: #94a3b8;
+  border-radius: 2px;
+  transition: all .3s;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ===== MOBILE MENU ===== */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 62px; left: 0; right: 0;
+  background: rgba(8,15,28,0.97);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  z-index: 99;
+  padding: 10px 16px 16px;
+  flex-direction: column;
+  gap: 4px;
+  transform: translateY(-8px);
+  opacity: 0;
+  transition: all .25s ease;
+}
+.mobile-menu.open {
+  display: flex;
+  transform: translateY(0);
+  opacity: 1;
+}
+.mobile-menu .nav-link {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #94a3b8;
+  display: block;
+}
+.mobile-menu .nav-link.active {
+  background: rgba(59,130,246,0.2);
+  color: var(--primary);
+}
+.mobile-menu .nav-link:hover {
+  background: rgba(59,130,246,0.12);
+  color: #93c5fd;
+}
+.mobile-menu-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 6px 0;
+}
+
 /* ===== MAIN ===== */
 main { max-width:1160px; margin:0 auto; padding:28px 20px 60px; position:relative; z-index:1; }
 
@@ -246,25 +313,21 @@ main { max-width:1160px; margin:0 auto; padding:28px 20px 60px; position:relativ
 .stat-val   { font-size:24px; font-weight:700; color:#fff; line-height:1.1; margin-top:4px; }
 .stat-val .sub { font-size:13px; margin-left:2px; }
 
-/* ===== MIDDLE SECTION: chart + action panel ===== */
+/* ===== MIDDLE SECTION ===== */
 .mid-section { display:grid; grid-template-columns:1fr 340px; gap:16px; margin-bottom:18px; }
 
-/* Chart card */
 .chart-card {
   background:var(--glass);
   backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   border:1px solid var(--border); border-radius:var(--radius);
-  padding:22px 24px;
-  display:flex; flex-direction:column;
+  padding:22px 24px; display:flex; flex-direction:column;
 }
 .section-title { font-size:14px; font-weight:600; color:#fff; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
 .section-title .dot { width:8px; height:8px; border-radius:50%; }
 .chart-inner { flex:1; position:relative; min-height:180px; }
 
-/* Right panel: filter + actions stacked */
 .right-panel { display:flex; flex-direction:column; gap:14px; }
 
-/* Filter card */
 .filter-card {
   background:var(--glass);
   backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
@@ -282,7 +345,6 @@ main { max-width:1160px; margin:0 auto; padding:28px 20px 60px; position:relativ
 .filter-input[type=date]::-webkit-calendar-picker-indicator { filter:invert(1) opacity(.5); cursor:pointer; }
 .filter-btns { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 
-/* Action card */
 .action-card {
   background:var(--glass);
   backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
@@ -416,13 +478,14 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
   .filter-btns { grid-template-columns:1fr 1fr; }
 }
 @media (max-width:900px) {
-  .navbar { padding:0 18px; }
+  .navbar { padding:0 18px; height:56px; }
   .nav-center { display:none; }
+  .hamburger { display:flex; }
+  .mobile-menu { top:56px; }
   main { padding:20px 14px 50px; }
   .stats-row { grid-template-columns:repeat(3,1fr); }
 }
 @media (max-width:640px) {
-  .navbar { height:56px; }
   .nav-clock,.nav-sub { display:none; }
   main { padding:16px 12px 50px; }
   .stats-row { grid-template-columns:1fr 1fr; }
@@ -438,80 +501,11 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
 @media (max-width:380px) {
   .stats-row { grid-template-columns:1fr 1fr; }
 }
-/* ===== HAMBURGER & MOBILE MENU ===== */
-.hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 38px; height: 38px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  cursor: pointer;
-  padding: 8px;
-  flex-shrink: 0;
-}
-.hamburger span {
-  display: block;
-  width: 100%; height: 2px;
-  background: #94a3b8;
-  border-radius: 2px;
-  transition: all .3s;
-}
-.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-.mobile-menu {
-  display: none;
-  position: fixed;
-  top: 62px; left: 0; right: 0;
-  background: rgba(8,15,28,0.97);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  z-index: 99;
-  padding: 10px 16px 16px;
-  flex-direction: column;
-  gap: 4px;
-  transform: translateY(-8px);
-  opacity: 0;
-  transition: all .25s ease;
-}
-.mobile-menu.open {
-  display: flex;
-  transform: translateY(0);
-  opacity: 1;
-}
-.mobile-menu .nav-link {
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 14px;
-  color: #94a3b8;
-}
-.mobile-menu .nav-link.active {
-  background: rgba(59,130,246,0.2);
-  color: var(--primary);
-}
-.mobile-menu .nav-link:hover {
-  background: rgba(59,130,246,0.12);
-  color: #93c5fd;
-}
-.mobile-menu-divider {
-  height: 1px;
-  background: rgba(255,255,255,0.07);
-  margin: 6px 0;
-}
-
-@media (max-width:900px) {
-  .hamburger { display: flex; }
-  .mobile-menu { top: 56px; }
-}
 </style>
 </head>
 <body>
 
-<!-- ===== LEFT SIDE DECO ===== -->
+<!-- LEFT SIDE DECO -->
 <div class="side-deco side-left">
   <div class="side-grid"></div>
   <div class="side-orb" style="width:180px;height:180px;background:rgba(59,130,246,0.07);top:18%;left:-40px;animation-duration:9s;"></div>
@@ -529,7 +523,7 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
   <div class="side-label">Rekap Absensi • SMKN 2 Yogyakarta</div>
 </div>
 
-<!-- ===== RIGHT SIDE DECO ===== -->
+<!-- RIGHT SIDE DECO -->
 <div class="side-deco side-right">
   <div class="side-grid"></div>
   <div class="side-orb" style="width:150px;height:150px;background:rgba(16,185,129,0.06);top:28%;right:-25px;animation-duration:11s;animation-delay:-4s;"></div>
@@ -564,7 +558,7 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
   <div class="side-label">Visualisasi Kehadiran • Real-Time</div>
 </div>
 
-<!-- ===== NAVBAR ===== -->
+<!-- NAVBAR -->
 <nav class="navbar" id="navbar">
   <div class="nav-brand">
     <div class="nav-logo"><img src="Gambar1.png" alt="" onerror="this.style.display='none'"></div>
@@ -597,6 +591,7 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
   <div class="mobile-menu-divider"></div>
   <a href="index.php"         class="nav-link">← Kembali ke Beranda</a>
 </div>
+
 <main>
 
   <!-- Page Header -->
@@ -607,7 +602,7 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
     </div>
   </div>
 
-  <!-- ===== STAT CARDS ===== -->
+  <!-- STAT CARDS -->
   <div class="stats-row">
     <div class="stat-card">
       <div class="stat-top" style="background:linear-gradient(90deg,var(--primary),#60a5fa)"></div>
@@ -641,10 +636,9 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
     </div>
   </div>
 
-  <!-- ===== MIDDLE: Chart kiri, Filter+Action kanan ===== -->
+  <!-- MIDDLE: Chart + Filter + Action -->
   <div class="mid-section">
 
-    <!-- Chart -->
     <div class="chart-card">
       <div class="section-title">
         <div class="dot" style="background:var(--primary)"></div>
@@ -655,10 +649,8 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
       </div>
     </div>
 
-    <!-- Right Panel -->
     <div class="right-panel">
 
-      <!-- Filter Card -->
       <div class="filter-card">
         <div class="section-title" style="margin-bottom:14px">
           <div class="dot" style="background:var(--sky)"></div>
@@ -680,7 +672,6 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
         </form>
       </div>
 
-      <!-- Action Card -->
       <div class="action-card">
         <div class="section-title" style="margin-bottom:14px">
           <div class="dot" style="background:var(--orange)"></div>
@@ -699,10 +690,10 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
         </div>
       </div>
 
-    </div><!-- /right-panel -->
-  </div><!-- /mid-section -->
+    </div>
+  </div>
 
-  <!-- ===== TABLE ===== -->
+  <!-- TABLE -->
   <div class="table-card">
     <div class="table-header">
       <h3>Data Absensi <?= !empty($_GET['tanggal']) ? '— '.date('d M Y', strtotime($_GET['tanggal'])) : 'Seluruh Periode' ?></h3>
@@ -807,7 +798,19 @@ footer { text-align:center; padding:20px; color:#334155; font-size:12px; margin-
 
 <script>
 // Clock
-function tick()
+function tick() {
+  const n = new Date();
+  document.getElementById('clock').textContent =
+    n.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'}) + ' · ' +
+    n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).replace(/\./g,':');
+}
+setInterval(tick, 1000); tick();
+
+// Navbar scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+});
+
 // Hamburger menu
 function toggleMenu() {
   const btn  = document.getElementById('hamburger');
@@ -825,54 +828,39 @@ document.addEventListener('click', function(e) {
     menu.classList.remove('open');
   }
 });
-{
-  const n=new Date();
-  document.getElementById('clock').textContent=
-    n.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short'})+' · '+
-    n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).replace(/\./g,':');
-}
-setInterval(tick,1000); tick();
-
-// Navbar scroll
-window.addEventListener('scroll',()=>{
-  document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20);
-});
 
 // Modal
-const modal=document.getElementById('izinModal');
-function openModal(){modal.classList.add('open');document.body.style.overflow='hidden';}
-function closeModal(){modal.classList.remove('open');document.body.style.overflow='';}
-modal.addEventListener('click',e=>{if(e.target===modal)closeModal();});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+const modal = document.getElementById('izinModal');
+function openModal() { modal.classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeModal() { modal.classList.remove('open'); document.body.style.overflow = ''; }
+modal.addEventListener('click', e => { if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
 
 // Toast
 let tt;
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2800);
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 // Chart
-document.addEventListener('DOMContentLoaded',()=>{
-  const ctx=document.getElementById('disiplinChart').getContext('2d');
-  const vals=[<?=$jml_tepat?>,<?=$jml_telat?>,<?=$jml_sakit?>,<?=$jml_izin?>,<?=$jml_alfa?>];
-  const tot=vals.reduce((a,b)=>a+b,0);
-  const data  =tot===0?[1]:vals;
-  const colors=tot===0?['rgba(255,255,255,0.06)']:['#10b981','#ef4444','#f59e0b','#0ea5e9','#991b1b'];
-  const labels=tot===0?['Belum ada data']:['Tepat Waktu','Terlambat','Sakit','Izin','Alfa'];
+document.addEventListener('DOMContentLoaded', () => {
+  const ctx = document.getElementById('disiplinChart').getContext('2d');
+  const vals = [<?=$jml_tepat?>,<?=$jml_telat?>,<?=$jml_sakit?>,<?=$jml_izin?>,<?=$jml_alfa?>];
+  const tot  = vals.reduce((a,b) => a+b, 0);
+  const data   = tot === 0 ? [1] : vals;
+  const colors = tot === 0 ? ['rgba(255,255,255,0.06)'] : ['#10b981','#ef4444','#f59e0b','#0ea5e9','#991b1b'];
+  const labels = tot === 0 ? ['Belum ada data'] : ['Tepat Waktu','Terlambat','Sakit','Izin','Alfa'];
 
-  new Chart(ctx,{
-    type:'doughnut',
-    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:8}]},
-    options:{
-      responsive:true, maintainAspectRatio:false, cutout:'68%',
-      plugins:{
-        legend:{
-          position:'right',
-          labels:{color:'#94a3b8',boxWidth:11,font:{size:12},padding:14}
-        },
-        tooltip:{enabled:tot!==0}
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 8 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '68%',
+      plugins: {
+        legend: { position:'right', labels:{ color:'#94a3b8', boxWidth:11, font:{size:12}, padding:14 } },
+        tooltip: { enabled: tot !== 0 }
       }
     }
   });
